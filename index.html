@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,37 +8,62 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
+
+        #equipment-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
         .equipment {
-            margin-bottom: 20px;
             border: 1px solid #ccc;
             padding: 10px;
         }
+
         .stat-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
         }
-        .stat-row select, .stat-row input {
+
+        .stat-row select,
+        .stat-row input {
             width: 120px;
         }
-        button, select {
+
+        button,
+        select {
             margin: 10px 0;
             padding: 5px;
         }
+
+        #character-select-container {
+            display: flex;
+            align-items: start;
+        }
+
+        #preset-weights {
+            margin-left: 20px;
+        }
     </style>
 </head>
+
 <body>
     <h1>Character Equipment Calculator</h1>
-    <select id="character-select" onchange="updateWeights()">
-        <option value="">Select a character</option>
-        <option value="dps">DPS</option>
-        <option value="tank">Tank</option>
-        <option value="support">Support</option>
-    </select>
+    <input type="file" id="json-file-input" accept=".json" style="display: none;">
+    <button onclick="document.getElementById('json-file-input').click()">Load JSON File</button>
+    <div id="character-select-container">
+        <div>
+            <select id="character-select" onchange="updateWeights()">
+                <option value="">Select a character</option>
+            </select>
+        </div>
+        <div id="preset-weights"></div>
+    </div>
     <div id="equipment-container"></div>
     <button onclick="calculateScores()">Calculate Scores</button>
     <div id="results"></div>
@@ -45,61 +71,64 @@
     <script>
         const equipmentSlots = ["Feet", "Hands", "Head", "Body", "Link Rope", "Planar Sphere"];
         const stats = [
-            "SPD", "CRIT Rate_", "Effect Hit Rate_", "Break Effect_", 
+            "SPD", "CRIT Rate_", "Effect Hit Rate_", "Break Effect_",
             "CRIT DMG_", "ATK_", "ATK", "HP_", "HP", "DEF_", "DEF", "Effect RES_"
         ];
+        let jsonData;
+
+        document.getElementById('json-file-input').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        jsonData = JSON.parse(e.target.result);
+                        updateCharacterSelect();
+                        populateEquipmentFromJSON();
+                        alert('JSON file loaded successfully!');
+                    } catch (error) {
+                        alert('Error parsing JSON file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function populateEquipmentFromJSON() {
+            if (!jsonData.relics) {
+                console.error('No relics data found in the JSON file');
+                return;
+            }
+
+            jsonData.relics.forEach(relic => {
+                const slotElement = findSlotElement(relic.slot);
+                if (slotElement) {
+                    const equipmentDiv = slotElement.closest('.equipment');
+                    if (equipmentDiv) {
+                        for (let i = 0; i < relic.substats.length; i++) {
+                            const statSelect = equipmentDiv.querySelector(`select[id$="-stat${i + 1}"]`);
+                            const valueInput = equipmentDiv.querySelector(`input[id$="-value${i + 1}"]`);
+
+                            if (statSelect && valueInput) {
+                                statSelect.value = relic.substats[i].key;
+                                valueInput.value = relic.substats[i].value;
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         const characterPresets = {
-            dps: {
-                "SPD": 0.8, "CRIT Rate_": 1, "CRIT DMG_": 1, "ATK_": 0.9,
-                "ATK": 0.9, "HP_": 0.3, "HP": 0.3, "DEF_": 0.2, "DEF": 0.2,
-                "Effect Hit Rate_": 0.5, "Break Effect_": 0.6, "Effect RES_": 0.1
-            },
-            tank: {
-                "HP_": 1, "HP": 1, "DEF_": 0.9, "DEF": 0.9, "Effect RES_": 0.7,
-                "SPD": 0.5, "CRIT Rate_": 0.2, "CRIT DMG_": 0.2, "ATK_": 0.3,
-                "ATK": 0.3, "Effect Hit Rate_": 0.4, "Break Effect_": 0.3
-            },
-            support: {
-                "SPD": 1, "Effect Hit Rate_": 0.9, "Break Effect_": 0.8,
-                "HP_": 0.7, "HP": 0.7, "ATK_": 0.6, "ATK": 0.6, "DEF_": 0.5,
-                "DEF": 0.5, "CRIT Rate_": 0.4, "CRIT DMG_": 0.3, "Effect RES_": 0.6
+            "firefly": {
+                "ATK": 0.15,
+                "ATK_": 0.2,
+                "SPD": 1,
+                "Break Effect_": 1
             }
         };
 
         let currentWeights = {};
-
-        function formatStatName(stat) {
-            return stat.endsWith('_') ? stat.slice(0, -1) + '%' : stat;
-        }
-
-        function createEquipmentInputs() {
-            const container = document.getElementById('equipment-container');
-            equipmentSlots.forEach(slot => {
-                const equipment = document.createElement('div');
-                equipment.className = 'equipment';
-                equipment.innerHTML = `<h3>${slot}</h3>`;
-                
-                for (let i = 1; i <= 4; i++) {
-                    const statRow = document.createElement('div');
-                    statRow.className = 'stat-row';
-                    statRow.innerHTML = `
-                        <select id="${slot}-stat${i}">
-                            ${stats.map(stat => `<option value="${stat}">${formatStatName(stat)}</option>`).join('')}
-                        </select>
-                        <input type="number" id="${slot}-value${i}" placeholder="Value" step="0.1">
-                    `;
-                    equipment.appendChild(statRow);
-                }
-                
-                container.appendChild(equipment);
-            });
-        }
-
-        function updateWeights() {
-            const character = document.getElementById('character-select').value;
-            currentWeights = characterPresets[character] || {};
-        }
 
         function calculateScores() {
             if (Object.keys(currentWeights).length === 0) {
@@ -116,7 +145,7 @@
                 for (let i = 1; i <= 4; i++) {
                     const stat = document.getElementById(`${slot}-stat${i}`).value;
                     const value = parseFloat(document.getElementById(`${slot}-value${i}`).value) || 0;
-                    const weight = currentWeights[stat] || 0;
+                    const weight = stat === "None" ? 0 : (currentWeights[stat] || 0);
                     equipmentScore += value * weight;
                 }
                 totalScore += equipmentScore;
@@ -126,7 +155,121 @@
             results.innerHTML += `<h3>Total Score: ${totalScore.toFixed(2)}</h3>`;
         }
 
+
+        function createEquipmentInputs() {
+            const container = document.getElementById('equipment-container');
+            container.innerHTML = '';  // Clear existing equipment inputs
+            equipmentSlots.forEach(slot => {
+                const equipment = document.createElement('div');
+                equipment.className = 'equipment';
+                equipment.innerHTML = `<h3>${slot}</h3>`;
+
+                for (let i = 1; i <= 4; i++) {
+                    const statRow = document.createElement('div');
+                    statRow.className = 'stat-row';
+                    statRow.innerHTML = `
+                        <select id="${slot}-stat${i}">
+                            <option value="None">None</option>
+                            ${stats.map(stat => `<option value="${stat}">${formatStatName(stat)}</option>`).join('')}
+                        </select>
+                        <input type="number" id="${slot}-value${i}" placeholder="Value" step="0.1">
+                    `;
+                    equipment.appendChild(statRow);
+                }
+
+                container.appendChild(equipment);
+            });
+        }
+
+        function displayPresetWeights() {
+            const presetWeightsDiv = document.getElementById('preset-weights');
+            presetWeightsDiv.innerHTML = '<h3>Preset Weights:</h3>';
+
+            const weightsContent = Object.entries(currentWeights)
+                .filter(([_, weight]) => weight > 0)
+                .sort(([, a], [, b]) => b - a)
+                .map(([stat, weight]) => `<div>${formatStatName(stat)}: ${weight.toFixed(2)}</div>`)
+                .join('');
+
+            presetWeightsDiv.innerHTML += `<div style="display: flex; gap: 10px;">${weightsContent}</div>`;
+        }
+
+        function findSlotElement(slot) {
+            const h3Elements = document.querySelectorAll('.equipment h3');
+            for (let h3 of h3Elements) {
+                if (h3.textContent.trim() === slot) {
+                    return h3;
+                }
+            }
+            return null;
+        }
+
+        function formatStatName(stat) {
+            return stat.endsWith('_') ? stat.slice(0, -1) + '%' : stat;
+        }
+
+        function showCharacterEquipment(character) {
+            if (!jsonData.relics) {
+                console.error('No relics data found in the JSON file');
+                return;
+            }
+
+            createEquipmentInputs();  // Clear all equipment inputs
+
+            jsonData.relics.forEach(relic => {
+                if (relic.location.toLowerCase() === character) {
+                    const slotElement = findSlotElement(relic.slot);
+                    if (slotElement) {
+                        const equipmentDiv = slotElement.closest('.equipment');
+                        if (equipmentDiv) {
+                            for (let i = 0; i < relic.substats.length; i++) {
+                                const statSelect = equipmentDiv.querySelector(`select[id$="-stat${i + 1}"]`);
+                                const valueInput = equipmentDiv.querySelector(`input[id$="-value${i + 1}"]`);
+
+                                if (statSelect && valueInput) {
+                                    statSelect.value = relic.substats[i].key;
+                                    valueInput.value = relic.substats[i].value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharacterSelect() {
+            const characterSelect = document.getElementById('character-select');
+            characterSelect.innerHTML = '<option value="">Select a character</option>';
+
+            const locations = new Set();
+            if (jsonData.relics) {
+                jsonData.relics.forEach(relic => {
+                    if (relic.location && characterPresets.hasOwnProperty(relic.location.toLowerCase())) {
+                        locations.add(relic.location);
+                    }
+                });
+            }
+
+            const sortedLocations = Array.from(locations).sort();
+            sortedLocations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location.toLowerCase();
+                option.textContent = location;
+                characterSelect.appendChild(option);
+            });
+
+            console.log('Character select updated with options:', sortedLocations);
+        }
+
+        function updateWeights() {
+            const character = document.getElementById('character-select').toLowerCase();
+            currentWeights = characterPresets[character] || {};
+            displayPresetWeights();
+            showCharacterEquipment(character);
+        }
+
         createEquipmentInputs();
     </script>
 </body>
+
 </html>
