@@ -465,50 +465,66 @@ function getCurrentRelicsScore() {
 }
 
 function getExpectations() {
-    let [totalScore, totalHit] = getCurrentRelicsScore();
-    const currentBestRelics = JSON.parse(JSON.stringify(currentRelics));
+    const simulationCount = 500;
+    let totalFarmCount = 0;
     const setType = document.getElementById('setType-select').value;
     const targetScore = parseFloat(document.getElementById('target-score').value);
     const targetHits = parseFloat(document.getElementById('target-hits').value);
-    const rainbow = document.getElementById('is-rainbow').checked;
-    const max = 100000;
-    let resultFarmCount = 0;
     if (targetScore < 1 && targetHits < 1) {
         alert('Please set target score or target hits');
         return;
     }
-    document.getElementById('start-calculating').disabled = true;
-    document.getElementById('calculate-result').innerHTML = `<h2>Running Simulations...</h2>`;
-    for (let currentCount = 1; currentCount <= max; currentCount++) {
-        const generated = generateRelic(setType, 1);
-        const currentBest = currentBestRelics[generated.slot];
-        const [bestScore, bestHit] = getRelicScore(currentBest);
-        const [generatedScore, generatedHit] = getRelicScore(generated);
-        if (bestScore > generatedScore) {
-            continue;
-        }
-        totalScore += (generatedScore - bestScore);
-        totalHit += (generatedHit - bestHit);
-        currentBestRelics[generated.slot] = generated;
-        if ((targetScore > 1 && totalScore >= targetScore)
-            || (targetHits > 1 && totalHit >= targetHits)) {
-            resultFarmCount = currentCount;
-            break;
-        }
-        if (Math.random() < 0.05) {
-            currentCount -= 1;
-        }
+    let [currentScore, currentHits] = getCurrentRelicsScore();
+    if (targetScore > 1 && targetScore < currentScore) {
+        alert('Please enter a target score > current score');
+        return;
     }
-    if (resultFarmCount === 0) {
-        resultFarmCount = max;
+    if (targetHits > 1 && targetHits < currentHits) {
+        alert('Please enter a target hits > current score');
+        return;
+    }
+    const rainbow = document.getElementById('is-rainbow').checked;
+    document.getElementById('calculate-result').innerHTML = `<h2>Running Simulations...</h2>`;
+    document.getElementById('start-calculating').disabled = true;
+    for (let currentSimuationCount = 1; currentSimuationCount <= simulationCount; currentSimuationCount++) {
+        let [totalScore, totalHit] = getCurrentRelicsScore();
+        const currentBestRelics = JSON.parse(JSON.stringify(currentRelics));
+        const max = 100000;
+        let resultFarmCount = 0;
+        for (let currentCount = 1; currentCount <= max; currentCount++) {
+            const generated = generateRelic(setType, 1);
+            const currentBest = currentBestRelics[generated.slot];
+            const [bestScore, bestHit] = getRelicScore(currentBest);
+            const [generatedScore, generatedHit] = getRelicScore(generated);
+            if (bestScore > generatedScore) {
+                continue;
+            }
+            totalScore += (generatedScore - bestScore);
+            totalHit += (generatedHit - bestHit);
+            currentBestRelics[generated.slot] = generated;
+            if ((targetScore > 1 && totalScore >= targetScore)
+                || (targetHits > 1 && totalHit >= targetHits)) {
+                resultFarmCount = currentCount;
+                break;
+            }
+            if (Math.random() < 0.05) {
+                currentCount -= 1;
+            }
+        }
+        if (resultFarmCount === 0) {
+            resultFarmCount = max;
+        }
+        totalFarmCount += resultFarmCount;
     }
     // mutiply by 2 (wrong set)
     // 2 per 40 stamina the (10% chance to get extra is included above)
-    const farmCount = rainbow ? resultFarmCount : resultFarmCount * 2;
+    const farmCount = rainbow ? totalFarmCount / simulationCount : totalFarmCount / simulationCount * 2;
     const stamina = farmCount * 40;
     const days = stamina / 240;
     document.getElementById('calculate-result').innerHTML =
-        `<h2>Spent: ${days.toFixed(2)} days, ${stamina.toFixed(2)} stamina to reach ${totalScore.toFixed(2)} Score ${totalHit.toFixed(2)} Hits</h2>`;
+        `<h2>After 500 Simulations, on average you need to spent: ${days.toFixed(2)} days, ${stamina.toFixed(2)} stamina`
+        + ` to reach ${targetScore > 0 ? targetScore.toFixed(2) + ' Score' : ''} `
+        + `${targetHits > 0 ? targetHits.toFixed(2) + ' Hits' : ''}</h2>`;
     document.getElementById('start-calculating').disabled = false;
 }
 
