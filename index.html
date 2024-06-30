@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Stat Calculator</title>
+    <title>Game Stat Weight Calculator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,7 +27,7 @@
     </style>
 </head>
 <body>
-    <h1>Game Stat Calculator</h1>
+    <h1>Game Stat Weight Calculator</h1>
     <select id="character-select" onchange="loadCharacterPreset()">
         <option value="">Select a character</option>
         <option value="dps">DPS</option>
@@ -35,8 +35,8 @@
         <option value="support">Support</option>
     </select>
     <div id="stat-inputs"></div>
-    <button onclick="calculateScore()">Calculate Score</button>
-    <p>Total Score: <span id="total-score">0</span></p>
+    <button onclick="calculateTotalWeight()">Calculate Total Weight</button>
+    <p>Total Weight: <span id="total-weight">0</span></p>
 
     <script>
         const stats = [
@@ -68,14 +68,17 @@
             }
         };
 
+        function formatStatName(stat) {
+            return stat.endsWith('_') ? stat.slice(0, -1) + '%' : stat;
+        }
+
         function createInputs() {
             const container = document.getElementById('stat-inputs');
             stats.forEach(stat => {
                 const div = document.createElement('div');
                 div.className = 'stat-row';
                 div.innerHTML = `
-                    <label>${stat}:</label>
-                    <input type="number" id="${stat.toLowerCase().replace(/ /g, '-')}-value" placeholder="Value" min="0">
+                    <label>${formatStatName(stat)}:</label>
                     <input type="number" id="${stat.toLowerCase().replace(/ /g, '-')}-weight" placeholder="Weight" min="0" step="0.1" value="0">
                 `;
                 container.appendChild(div);
@@ -92,14 +95,13 @@
             });
         }
 
-        function calculateScore() {
-            let totalScore = 0;
+        function calculateTotalWeight() {
+            let totalWeight = 0;
             stats.forEach(stat => {
-                const value = parseFloat(document.getElementById(`${stat.toLowerCase().replace(/ /g, '-')}-value`).value) || 0;
                 const weight = parseFloat(document.getElementById(`${stat.toLowerCase().replace(/ /g, '-')}-weight`).value) || 0;
-                totalScore += value * weight;
+                totalWeight += weight;
             });
-            document.getElementById('total-score').textContent = totalScore.toFixed(2);
+            document.getElementById('total-weight').textContent = totalWeight.toFixed(2);
         }
 
         createInputs();
