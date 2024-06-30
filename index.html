@@ -30,9 +30,9 @@
     <h1>Game Stat Calculator</h1>
     <select id="character-select" onchange="loadCharacterPreset()">
         <option value="">Select a character</option>
-        <option value="warrior">Warrior</option>
-        <option value="mage">Mage</option>
-        <option value="rogue">Rogue</option>
+        <option value="dps">DPS</option>
+        <option value="tank">Tank</option>
+        <option value="support">Support</option>
     </select>
     <div id="stat-inputs"></div>
     <button onclick="calculateScore()">Calculate Score</button>
@@ -40,29 +40,31 @@
 
     <script>
         const stats = [
-            "Strength", "Dexterity", "Constitution", "Intelligence", 
-            "Wisdom", "Charisma", "Speed", "Luck", "Perception", 
-            "Stealth", "Agility", "Endurance"
+            "SPD", "CRIT Rate_", "Effect Hit Rate_", "Break Effect_", 
+            "CRIT DMG_", "ATK_", "ATK", "HP_", "HP", "DEF_", "DEF", "Effect RES_"
         ];
 
         const characterPresets = {
-            warrior: {
-                Strength: 1,
-                Speed: 1,
-                Constitution: 0.8,
-                Endurance: 0.7
+            dps: {
+                "SPD": 0.8,
+                "CRIT Rate_": 1,
+                "CRIT DMG_": 1,
+                "ATK_": 0.9,
+                "ATK": 0.9
             },
-            mage: {
-                Intelligence: 1,
-                Wisdom: 0.9,
-                Charisma: 0.7,
-                Luck: 0.5
+            tank: {
+                "HP_": 1,
+                "HP": 1,
+                "DEF_": 0.9,
+                "DEF": 0.9,
+                "Effect RES_": 0.7
             },
-            rogue: {
-                Dexterity: 1,
-                Stealth: 0.9,
-                Agility: 0.8,
-                Perception: 0.7
+            support: {
+                "SPD": 1,
+                "Effect Hit Rate_": 0.9,
+                "Break Effect_": 0.8,
+                "HP_": 0.7,
+                "HP": 0.7
             }
         };
 
@@ -73,8 +75,8 @@
                 div.className = 'stat-row';
                 div.innerHTML = `
                     <label>${stat}:</label>
-                    <input type="number" id="${stat.toLowerCase()}-value" placeholder="Value" min="0">
-                    <input type="number" id="${stat.toLowerCase()}-weight" placeholder="Weight" min="0" step="0.1" value="0">
+                    <input type="number" id="${stat.toLowerCase().replace(/ /g, '-')}-value" placeholder="Value" min="0">
+                    <input type="number" id="${stat.toLowerCase().replace(/ /g, '-')}-weight" placeholder="Weight" min="0" step="0.1" value="0">
                 `;
                 container.appendChild(div);
             });
@@ -85,7 +87,7 @@
             const preset = characterPresets[character] || {};
 
             stats.forEach(stat => {
-                const weightInput = document.getElementById(`${stat.toLowerCase()}-weight`);
+                const weightInput = document.getElementById(`${stat.toLowerCase().replace(/ /g, '-')}-weight`);
                 weightInput.value = preset[stat] || 0;
             });
         }
@@ -93,8 +95,8 @@
         function calculateScore() {
             let totalScore = 0;
             stats.forEach(stat => {
-                const value = parseFloat(document.getElementById(`${stat.toLowerCase()}-value`).value) || 0;
-                const weight = parseFloat(document.getElementById(`${stat.toLowerCase()}-weight`).value) || 0;
+                const value = parseFloat(document.getElementById(`${stat.toLowerCase().replace(/ /g, '-')}-value`).value) || 0;
+                const weight = parseFloat(document.getElementById(`${stat.toLowerCase().replace(/ /g, '-')}-weight`).value) || 0;
                 totalScore += value * weight;
             });
             document.getElementById('total-score').textContent = totalScore.toFixed(2);
