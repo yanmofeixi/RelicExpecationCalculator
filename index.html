@@ -10,18 +10,77 @@
 
 <body>
     <h1>Character Equipment Calculator</h1>
-    <input type="file" id="json-file-input" accept=".json" style="display: none;">
-    <button onclick="document.getElementById('json-file-input').click()">Load JSON File</button>
     <div id="character-select-container">
+        <input type="file" id="json-file-input" accept=".json" style="display: none;">
+        <button onclick="document.getElementById('json-file-input').click()">Load JSON File</button>
         <div>
-            <select id="character-select" onchange="updateWeights()">
-                <option value="">Select a character</option>
+            <select id="character-select" onchange="updateCurrentCharacter()">
+                <option value="None">Select a character</option>
             </select>
         </div>
         <div id="preset-weights"></div>
     </div>
     <div id="equipment-container"></div>
     <div id="results"></div>
+    <h3>Farm Stamina Expecation Calculator</h3>
+    <div id="stamina-expectation-calculator">
+        <a>Relic Type:</a>
+        <select id="setType-select-expectation">
+            <option value="Regular">Regular Relics</option>
+            <option value="Planar">Planar Relics</option>
+        </select>
+        <a>Target Score:</a>
+        <input id="target-score" type="number" value="0" style="width: 50px;">
+        <a>Target Hits:</a>
+        <input id="target-hits" type="number" value="0" style="width: 50px;">
+        <a>Rainbow Sets:</a>
+        <input id="is-rainbow" type="checkbox" style="width: 50px;">
+        <button id="start-calculating" onclick="getExpectations()">Start Calculating</button>
+    </div>
+    <div id="calculate-result"></div>
+    <h3>Relic Farm/Synthesis Simulation</h3>
+    <div id="simulate-relic-runs">
+        <a>Relic Type:</a>
+        <select id="setType-select">
+            <option value="Regular">Regular Relics</option>
+            <option value="Planar">Planar Relics</option>
+        </select>
+        <a>Relic Type:</a>
+        <select id="fixedSlot-select">
+            <option value="None">Not Synthesising</option>
+            <option value="Feet">Feet</option>
+            <option value="Hands">Hands</option>
+            <option value="Head">Head</option>
+            <option value="Body">Body</option>
+            <option value="Link Rope">Link Rope</option>
+            <option value="Planar Sphere">Planar Sphere</option>
+        </select>
+        <a>Main Stat:</a>
+        <select id="fixedMainStat-select">
+            <option value="None">Not Self Modeling</option>
+            <option value="ATK">ATK%</option>
+            <option value="HP">HP%</option>
+            <option value="DEF">DEF%</option>
+            <option value="Break Effect">Break Effect%</option>
+            <option value="Outgoing Healing Boost">Outgoing Healing Boost%</option>
+            <option value="Effect Hit Rate">Effect Hit Rate%</option>
+            <option value="SPD">SPD</option>
+            <option value="Energy Regeneration Rate">Energy Regeneration Rate%</option>
+            <option value="CRIT DMG">CRIT DMG%</option>
+            <option value="CRIT Rate">CRIT Rate%</option>
+            <option value="Fire DMG Boost">Fire DMG Boost%</option>
+            <option value="Lightning DMG Boost">Lightning DMG Boost%</option>
+            <option value="Ice DMG Boost">Ice DMG Boost%</option>
+            <option value="Wind DMG Boost">Wind DMG Boost%</option>
+            <option value="Quantum DMG Boost">Quantum DMG Boost%</option>
+            <option value="Imaginary DMG Boost">Imaginary DMG Boost%</option>
+            <option value="Physical DMG Boost">Physical DMG Boost%</option>
+        </select>
+        <a>Simulation Count:</a>
+        <input id="farm-count" type="number" value="1" style="width: 50px;">
+        <button onclick="generateRelic()">Start Simulation</button>
+    </div>
+    <h2 id="farm-result"></h2>
     <script src="script.js"></script>
 </body>
 
