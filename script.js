@@ -13,7 +13,6 @@ document.getElementById('json-file-input').addEventListener('change', function (
             try {
                 jsonData = JSON.parse(e.target.result);
                 updateCharacterSelect();
-                populateEquipmentFromJSON();
                 alert('JSON file loaded successfully!');
             } catch (error) {
                 alert('Error parsing JSON file: ' + error.message);
@@ -23,67 +22,16 @@ document.getElementById('json-file-input').addEventListener('change', function (
     }
 });
 
-function populateEquipmentFromJSON() {
-    if (!jsonData.relics) {
-        console.error('No relics data found in the JSON file');
-        return;
-    }
-
-    jsonData.relics.forEach(relic => {
-        const slotElement = findSlotElement(relic.slot);
-        if (slotElement) {
-            const equipmentDiv = slotElement.closest('.equipment');
-            if (equipmentDiv) {
-                for (let i = 0; i < relic.substats.length; i++) {
-                    const statSelect = equipmentDiv.querySelector(`select[id$="-stat${i + 1}"]`);
-                    const valueInput = equipmentDiv.querySelector(`input[id$="-value${i + 1}"]`);
-
-                    if (statSelect && valueInput) {
-                        statSelect.value = relic.substats[i].key;
-                        valueInput.value = relic.substats[i].value;
-                    }
-                }
-            }
-        }
-    });
-}
-
 const characterPresets = {
     "firefly": {
-        "ATK": 0.75,
-        "ATK_": 0.15,
+        "ATK": 0.15,
+        "ATK_": 0.75,
         "SPD": 1,
         "Break Effect_": 1
     }
 };
 
 let currentWeights = {};
-
-function calculateScores() {
-    if (Object.keys(currentWeights).length === 0) {
-        alert("Please select a character first!");
-        return;
-    }
-
-    let totalScore = 0;
-    const results = document.getElementById('results');
-    results.innerHTML = '<h2>Results:</h2>';
-
-    equipmentSlots.forEach(slot => {
-        let equipmentScore = 0;
-        for (let i = 1; i <= 4; i++) {
-            const stat = document.getElementById(`${slot}-stat${i}`).value;
-            const value = parseFloat(document.getElementById(`${slot}-value${i}`).value) || 0;
-            const weight = stat === "None" ? 0 : (currentWeights[stat] || 0);
-            equipmentScore += value * weight;
-        }
-        totalScore += equipmentScore;
-        results.innerHTML += `<p>${slot}: ${equipmentScore.toFixed(2)}</p>`;
-    });
-
-    results.innerHTML += `<h3>Total Score: ${totalScore.toFixed(2)}</h3>`;
-}
-
 
 function createEquipmentInputs() {
     const container = document.getElementById('equipment-container');
@@ -124,7 +72,7 @@ function displayPresetWeights() {
 function findSlotElement(slot) {
     const h3Elements = document.querySelectorAll('.equipment h3');
     for (let h3 of h3Elements) {
-        if (h3.textContent.trim() === slot) {
+        if (h3.textContent.includes(slot)) {
             return h3;
         }
     }
@@ -143,10 +91,12 @@ function showCharacterEquipment(character) {
 
     createEquipmentInputs();  // Clear all equipment inputs
 
+    let totalScore = 0;
     jsonData.relics.forEach(relic => {
         if (relic.location.toLowerCase() === character) {
             const slotElement = findSlotElement(relic.slot);
             if (slotElement) {
+                let equipmentScore = 0;
                 const equipmentDiv = slotElement.closest('.equipment');
                 if (equipmentDiv) {
                     for (let i = 0; i < relic.substats.length; i++) {
@@ -156,17 +106,22 @@ function showCharacterEquipment(character) {
                         if (statSelect && valueInput) {
                             statSelect.value = relic.substats[i].key;
                             valueInput.value = relic.substats[i].value;
+                            const weight = relic.substats[i].key === "None" ? 0 : (currentWeights[relic.substats[i].key] || 0);
+                            equipmentScore += relic.substats[i].value * weight;
                         }
                     }
                 }
+                slotElement.innerHTML = relic.slot + ' Score: ' + equipmentScore.toFixed(2);
+                totalScore += equipmentScore;
             }
         }
     });
+    results.innerHTML = `<h3>Total Score: ${totalScore.toFixed(2)}</h3>`;
 }
 
 function updateCharacterSelect() {
     const characterSelect = document.getElementById('character-select');
-    characterSelect.innerHTML = '<option value="">Select a character</option>';
+    characterSelect.innerHTML = '<option value="None">Select a character</option>';
 
     const locations = new Set();
     if (jsonData.relics) {
