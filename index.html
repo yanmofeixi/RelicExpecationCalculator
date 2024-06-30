@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Stat Calculator</title>
+    <style>
+        /* We'll add CSS here */
+    </style>
+</head>
+<body>
+    <h1>Game Stat Calculator</h1>
+    <div id="stat-inputs"></div>
+    <button onclick="calculateScore()">Calculate Score</button>
+    <p>Total Score: <span id="total-score">0</span></p>
+
+    <script>
+        // We'll add JavaScript here
+    </script>
+</body>
+</html>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    .stat-row input {
+        width: 60px;
+    }
+    button {
+        display: block;
+        margin: 20px 0;
+        padding: 10px;
+    }
+</style>
+
+<script>
+    const stats = [
+        "Strength", "Dexterity", "Constitution", "Intelligence", 
+        "Wisdom", "Charisma", "Speed", "Luck", "Perception", 
+        "Stealth", "Agility", "Endurance"
+    ];
+
+    function createInputs() {
+        const container = document.getElementById('stat-inputs');
+        stats.forEach(stat => {
+            const div = document.createElement('div');
+            div.className = 'stat-row';
+            div.innerHTML = `
+                <label>${stat}:</label>
+                <input type="number" id="${stat.toLowerCase()}-value" placeholder="Value" min="0">
+                <input type="number" id="${stat.toLowerCase()}-weight" placeholder="Weight" min="0" step="0.1">
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function calculateScore() {
+        let totalScore = 0;
+        stats.forEach(stat => {
+            const value = parseFloat(document.getElementById(`${stat.toLowerCase()}-value`).value) || 0;
+            const weight = parseFloat(document.getElementById(`${stat.toLowerCase()}-weight`).value) || 0;
+            totalScore += value * weight;
+        });
+        document.getElementById('total-score').textContent = totalScore.toFixed(2);
+    }
+
+    createInputs();
+</script>
