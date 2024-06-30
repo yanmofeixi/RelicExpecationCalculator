@@ -3,42 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Stat Weight Calculator</title>
+    <title>Character Equipment Calculator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
+        }
+        .equipment {
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
         }
         .stat-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
-        .stat-row input {
-            width: 60px;
+        .stat-row select, .stat-row input {
+            width: 120px;
         }
         button, select {
-            display: block;
-            margin: 20px 0;
-            padding: 10px;
+            margin: 10px 0;
+            padding: 5px;
         }
     </style>
 </head>
 <body>
-    <h1>Game Stat Weight Calculator</h1>
-    <select id="character-select" onchange="loadCharacterPreset()">
+    <h1>Character Equipment Calculator</h1>
+    <select id="character-select" onchange="updateWeights()">
         <option value="">Select a character</option>
         <option value="dps">DPS</option>
         <option value="tank">Tank</option>
         <option value="support">Support</option>
     </select>
-    <div id="stat-inputs"></div>
-    <button onclick="calculateTotalWeight()">Calculate Total Weight</button>
-    <p>Total Weight: <span id="total-weight">0</span></p>
+    <div id="equipment-container"></div>
+    <button onclick="calculateScores()">Calculate Scores</button>
+    <div id="results"></div>
 
     <script>
+        const equipmentSlots = ["Feet", "Hands", "Head", "Body", "Link Rope", "Planar Sphere"];
         const stats = [
             "SPD", "CRIT Rate_", "Effect Hit Rate_", "Break Effect_", 
             "CRIT DMG_", "ATK_", "ATK", "HP_", "HP", "DEF_", "DEF", "Effect RES_"
@@ -46,65 +51,82 @@
 
         const characterPresets = {
             dps: {
-                "SPD": 0.8,
-                "CRIT Rate_": 1,
-                "CRIT DMG_": 1,
-                "ATK_": 0.9,
-                "ATK": 0.9
+                "SPD": 0.8, "CRIT Rate_": 1, "CRIT DMG_": 1, "ATK_": 0.9,
+                "ATK": 0.9, "HP_": 0.3, "HP": 0.3, "DEF_": 0.2, "DEF": 0.2,
+                "Effect Hit Rate_": 0.5, "Break Effect_": 0.6, "Effect RES_": 0.1
             },
             tank: {
-                "HP_": 1,
-                "HP": 1,
-                "DEF_": 0.9,
-                "DEF": 0.9,
-                "Effect RES_": 0.7
+                "HP_": 1, "HP": 1, "DEF_": 0.9, "DEF": 0.9, "Effect RES_": 0.7,
+                "SPD": 0.5, "CRIT Rate_": 0.2, "CRIT DMG_": 0.2, "ATK_": 0.3,
+                "ATK": 0.3, "Effect Hit Rate_": 0.4, "Break Effect_": 0.3
             },
             support: {
-                "SPD": 1,
-                "Effect Hit Rate_": 0.9,
-                "Break Effect_": 0.8,
-                "HP_": 0.7,
-                "HP": 0.7
+                "SPD": 1, "Effect Hit Rate_": 0.9, "Break Effect_": 0.8,
+                "HP_": 0.7, "HP": 0.7, "ATK_": 0.6, "ATK": 0.6, "DEF_": 0.5,
+                "DEF": 0.5, "CRIT Rate_": 0.4, "CRIT DMG_": 0.3, "Effect RES_": 0.6
             }
         };
+
+        let currentWeights = {};
 
         function formatStatName(stat) {
             return stat.endsWith('_') ? stat.slice(0, -1) + '%' : stat;
         }
 
-        function createInputs() {
-            const container = document.getElementById('stat-inputs');
-            stats.forEach(stat => {
-                const div = document.createElement('div');
-                div.className = 'stat-row';
-                div.innerHTML = `
-                    <label>${formatStatName(stat)}:</label>
-                    <input type="number" id="${stat.toLowerCase().replace(/ /g, '-')}-weight" placeholder="Weight" min="0" step="0.1" value="0">
-                `;
-                container.appendChild(div);
+        function createEquipmentInputs() {
+            const container = document.getElementById('equipment-container');
+            equipmentSlots.forEach(slot => {
+                const equipment = document.createElement('div');
+                equipment.className = 'equipment';
+                equipment.innerHTML = `<h3>${slot}</h3>`;
+                
+                for (let i = 1; i <= 4; i++) {
+                    const statRow = document.createElement('div');
+                    statRow.className = 'stat-row';
+                    statRow.innerHTML = `
+                        <select id="${slot}-stat${i}">
+                            ${stats.map(stat => `<option value="${stat}">${formatStatName(stat)}</option>`).join('')}
+                        </select>
+                        <input type="number" id="${slot}-value${i}" placeholder="Value" step="0.1">
+                    `;
+                    equipment.appendChild(statRow);
+                }
+                
+                container.appendChild(equipment);
             });
         }
 
-        function loadCharacterPreset() {
+        function updateWeights() {
             const character = document.getElementById('character-select').value;
-            const preset = characterPresets[character] || {};
-
-            stats.forEach(stat => {
-                const weightInput = document.getElementById(`${stat.toLowerCase().replace(/ /g, '-')}-weight`);
-                weightInput.value = preset[stat] || 0;
-            });
+            currentWeights = characterPresets[character] || {};
         }
 
-        function calculateTotalWeight() {
-            let totalWeight = 0;
-            stats.forEach(stat => {
-                const weight = parseFloat(document.getElementById(`${stat.toLowerCase().replace(/ /g, '-')}-weight`).value) || 0;
-                totalWeight += weight;
+        function calculateScores() {
+            if (Object.keys(currentWeights).length === 0) {
+                alert("Please select a character first!");
+                return;
+            }
+
+            let totalScore = 0;
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Results:</h2>';
+
+            equipmentSlots.forEach(slot => {
+                let equipmentScore = 0;
+                for (let i = 1; i <= 4; i++) {
+                    const stat = document.getElementById(`${slot}-stat${i}`).value;
+                    const value = parseFloat(document.getElementById(`${slot}-value${i}`).value) || 0;
+                    const weight = currentWeights[stat] || 0;
+                    equipmentScore += value * weight;
+                }
+                totalScore += equipmentScore;
+                results.innerHTML += `<p>${slot}: ${equipmentScore.toFixed(2)}</p>`;
             });
-            document.getElementById('total-weight').textContent = totalWeight.toFixed(2);
+
+            results.innerHTML += `<h3>Total Score: ${totalScore.toFixed(2)}</h3>`;
         }
 
-        createInputs();
+        createEquipmentInputs();
     </script>
 </body>
 </html>
